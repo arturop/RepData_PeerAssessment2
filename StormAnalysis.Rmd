@@ -1,0 +1,66 @@
+---
+title: "Introductory Analysis of Storm Weather Effects on Population and Economy"
+author: "Arturo Pina"
+date: "Monday, July 20, 2015"
+output: html_document
+---
+# Introductory Analysis of Storm Weather Effects on Population and Economy
+
+## Synopsis
+
+## Data processing
+The data processing stage is about getting hold of the data and doing any necessary transformations which allows us to do the type of analysis we are looking for.
+
+```{r DataProcessing}
+download.file("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2", "StormData.csv.bz2")
+storm <- read.csv(bzfile("StormData.csv.bz2"), stringsAsFactors = FALSE)
+```
+
+As a first step I looked at the Property and Crop Damage units. These are stored in the PROPDMGEXP and CROPDMGEXP respectively. The expected values where supposed to be blank, K (for '000s), M (for millions) and B for (billions). This is what I found, respectively:
+
+```{r ExponentsAnalysis}
+cat("Distribution of units for Property Damage Exponent")
+table(storm$PROPDMGEXP)
+cat("Distribution of units for Crop Damage Exponent")
+table(storm$CROPDMGEXP)
+```
+In order to do the analysis I consolidated magnitude and exponent into a single figure and I also decided to NA all the ones not within the expected values
+
+```{r ConsolidateDamage}
+damageExponent <- function(exponent) {
+  if(exponent == 'K')
+    exp <- 3
+  else if(exponent == 'M')
+    exp <- 6
+  else if(exponent == 'B')
+    exp <- 9
+  else
+    exp <- 0
+  return(exp)
+}
+storm$PROPDMG[which(!storm$PROPDMGEXP %in% c("","K","M","B"))] <- NA
+storm$CROPDMG[which(!storm$CROPDMGEXP %in% c("","K","M","B"))] <- NA
+validPROPDMG <- !is.na(storm$PROPDMG)
+validCROPDMG <- !is.na(storm$CROPDMG)
+propDmgExp <- vapply(storm$PROPDMGEXP[validPROPDMG], damageExponent, numeric(1))
+cropDmgExp <- vapply(storm$CROPDMGEXP[validCROPDMG], damageExponent, numeric(1))
+storm$PROPDMG[validPROPDMG] <- storm$PROPDMG[validPROPDMG] * (10 ** propDmgExp)
+storm$CROPDMG[validCROPDMG] <- storm$CROPDMG[validCROPDMG] * (10 ** cropDmgExp)
+
+```
+After that I did some exploratory analysis on Event type. The lowest hanging fruit seems to come from consolidating everything to uppercase
+
+```{r cleanup evtype}
+storm$EVTYPE <- toupper(storm$EVTYPE)
+```
+
+## Results
+
+```{r results}
+harm <- aggregate((INJURIES + FATALITIES) ~ EVTYPE, data = storm, sum)
+colnames(harm) <- c("EVTYPE","AFFECTED")
+harm <- harm[which(harm$AFFECTED > 0),]
+harm[order(-harm$AFFECTED),]
+harmTop10 <- head(harm[order(-harm$AFFECTED),], n = 10)
+dotchart(harmTop10$AFFECTED, harmTop10$EVTYPE)
+```
