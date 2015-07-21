@@ -12,6 +12,7 @@ output: html_document
 The data processing stage is about getting hold of the data and doing any necessary transformations which allows us to do the type of analysis we are looking for.
 
 ```{r DataProcessing}
+setInternet2(use = TRUE) # Knitr needs this to run download.file on SSL
 download.file("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2", "StormData.csv.bz2")
 storm <- read.csv(bzfile("StormData.csv.bz2"), stringsAsFactors = FALSE)
 ```
@@ -56,11 +57,29 @@ storm$EVTYPE <- toupper(storm$EVTYPE)
 
 ## Results
 
-```{r results}
+### Harm to humans
+
+For this preliminary study I decided to consider both Injuries and Fatalities as harm to the population. The figure below represents the top 10 atmospheric events leading to harm as defined by the previous sentence. Clearly Tornadoes are orders of magnitude more significant.
+
+```{r results harm}
 harm <- aggregate((INJURIES + FATALITIES) ~ EVTYPE, data = storm, sum)
 colnames(harm) <- c("EVTYPE","AFFECTED")
 harm <- harm[which(harm$AFFECTED > 0),]
 harm[order(-harm$AFFECTED),]
 harmTop10 <- head(harm[order(-harm$AFFECTED),], n = 10)
 dotchart(harmTop10$AFFECTED, harmTop10$EVTYPE)
+```
+
+### Economic impact
+
+Things are not so clear cut, although wind related events seem to be the most financially destructive with Tornadoes against in the lead outstanding position.
+
+```{r results economic}
+loss <- aggregate((PROPDMG + CROPDMG) ~ EVTYPE,
+                  data = storm, sum, na.rm = TRUE)
+colnames(loss) <- c("EVTYPE", "ECOLOSS")
+loss <- loss[which(loss$ECOLOSS > 0),]
+loss[order(-loss$ECOLOSS),]
+lossTop10 <- head(loss[order(-loss$ECOLOSS),], n = 10)
+dotchart(lossTop10$ECOLOSS, lossTop10$EVTYPE)
 ```
