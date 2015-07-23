@@ -1,12 +1,7 @@
----
-title: "Introductory Analysis of Storm Weather Effects on Population and Economy"
-author: "Arturo Pina"
-date: "Monday, July 20, 2015"
-output: html_document
----
 # Introductory Analysis of Storm Weather Effects on Population and Economy
 
 ## Synopsis
+I look at historic data as made available by the US National Weather Service in order to assess the effects of weather phenomena on the general health of the population and also the economic impact. An exploratory analysis reveals that tornadoes and in general wind related phenomena are the most harmful both in terms of injuries and casualties and resulting as well in the highest financial loss.
 
 ## Data processing
 The data processing stage is about getting hold of the data and doing any necessary transformations which allows us to do the type of analysis we are looking for.
@@ -59,15 +54,15 @@ storm$EVTYPE <- toupper(storm$EVTYPE)
 
 ### Harm to humans
 
-For this preliminary study I decided to consider both Injuries and Fatalities as harm to the population. The figure below represents the top 10 atmospheric events leading to harm as defined by the previous sentence. Clearly Tornadoes are orders of magnitude more significant.
+For this preliminary study I decided to consider both Injuries and Fatalities as harm to the population. I present a table with the Top 10 events by harm to humans and a dot chart diagram for visualisation with harm as as defined by the previous sentence. Clearly Tornadoes are orders of magnitude more significant.
 
 ```{r results harm}
 harm <- aggregate((INJURIES + FATALITIES) ~ EVTYPE, data = storm, sum)
 colnames(harm) <- c("EVTYPE","AFFECTED")
 harm <- harm[which(harm$AFFECTED > 0),]
-harm[order(-harm$AFFECTED),]
 harmTop10 <- head(harm[order(-harm$AFFECTED),], n = 10)
-dotchart(harmTop10$AFFECTED, harmTop10$EVTYPE)
+harmTop10
+dotchart(harmTop10$AFFECTED, harmTop10$EVTYPE, main = "Top Phenomena by harm to humans")
 ```
 
 ### Economic impact
@@ -79,7 +74,7 @@ loss <- aggregate((PROPDMG + CROPDMG) ~ EVTYPE,
                   data = storm, sum, na.rm = TRUE)
 colnames(loss) <- c("EVTYPE", "ECOLOSS")
 loss <- loss[which(loss$ECOLOSS > 0),]
-loss[order(-loss$ECOLOSS),]
 lossTop10 <- head(loss[order(-loss$ECOLOSS),], n = 10)
-dotchart(lossTop10$ECOLOSS, lossTop10$EVTYPE)
+lossTop10
+dotchart(lossTop10$ECOLOSS, lossTop10$EVTYPE, main = "Top Phenomena by economic loss")
 ```
